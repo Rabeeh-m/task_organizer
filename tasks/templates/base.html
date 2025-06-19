@@ -1,0 +1,45 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Organizer</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
+</head>
+<body>
+    {% if user.is_authenticated %}
+    <nav class="navbar">
+        <div class="nav-brand">Task Organizer</div>
+        <div class="nav-links">
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            <a href="{% url 'task_form' %}">Add Task</a>
+            <a href="{% url 'logout_user' %}">Logout</a>
+        </div>
+    </nav>
+    {%else%}
+    <nav class="navbar">
+        <div class="nav-brand">Task Organizer</div>
+        <div class="nav-links">
+            <a href="/login/">Login</a>
+            <a href="/register/">Register</a>
+        </div>
+    </nav>
+    {% endif %}
+    <div class="container">
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="alert {{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% block content %}
+        {% endblock %}
+    </div>
+    <script src="{% static 'js/tasks.js' %}"></script>
+    <script src="{% static 'js/calendar.js' %}"></script>
+</body>
+</html>

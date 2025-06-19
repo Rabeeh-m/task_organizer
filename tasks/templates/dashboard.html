@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="dashboard">
+    <h2>Welcome, {{ user.username }}!</h2>
+    <div class="dashboard-content">
+        <div class="task-list">
+            <h3>Your Tasks</h3>
+            <table id="taskTable">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Description</th>
+                        <th>Due Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="taskTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="calendar">
+        <h3>Task Calendar</h3>
+        <div id="calendar"></div>
+    </div>
+</div>
+{% endblock %}
