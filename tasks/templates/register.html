@@ -2,26 +2,85 @@
 {% block content %}
 <div class="auth-container">
     <h2>Register</h2>
-    <form method="POST" action="{% url 'register' %}">
+    <form method="POST" action="{% url 'register' %}" id="registerForm">
         {% csrf_token %}
         <div class="form-group">
             <label for="username">Username</label>
             <input type="text" id="username" name="username" required>
+            <span class="error" id="usernameError"></span>
         </div>
         <div class="form-group">
             <label for="email">Email</label>
             <input type="email" id="email" name="email" required>
+            <span class="error" id="emailError"></span>
         </div>
         <div class="form-group">
             <label for="password">Password</label>
             <input type="password" id="password" name="password" required>
+            <span class="error" id="passwordError"></span>
         </div>
         <div class="form-group">
             <label for="confirm_password">Confirm Password</label>
             <input type="password" id="confirm_password" name="confirm_password" required>
+            <span class="error" id="confirmPasswordError"></span>
         </div>
         <button type="submit" class="btn">Register</button>
     </form>
     <p>Already have an account? <a href="{% url 'login_page' %}">Login</a></p>
 </div>
+
+<script>
+document.getElementById('registerForm').addEventListener('submit', function(e) {
+    let valid = true;
+    const username = document.getElementById('username').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+
+    // Clear previous error messages
+    document.querySelectorAll('.error').forEach(el => el.textContent = '');
+
+    // Username validation
+    const usernameRegex = /^[a-zA-Z0-9_]+$/;
+    if (username.length < 3) {
+        document.getElementById('usernameError').textContent = 'Username must be at least 3 characters long';
+        valid = false;
+    } else if (!usernameRegex.test(username)) {
+        document.getElementById('usernameError').textContent = 'Username can only contain letters, numbers, and underscores';
+        valid = false;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        document.getElementById('emailError').textContent = 'Please enter a valid email address';
+        valid = false;
+    }
+
+    // Password validation
+    if (password.length < 6) {
+        document.getElementById('passwordError').textContent = 'Password must be at least 6 characters long';
+        valid = false;
+    }
+
+    // Confirm password validation
+    if (password !== confirmPassword) {
+        document.getElementById('confirmPasswordError').textContent = 'Passwords do not match';
+        valid = false;
+    }
+
+    if (!valid) {
+        e.preventDefault();
+    }
+});
+</script>
+
+<style>
+.error {
+    color: red;
+    font-size: 0.8em;
+    display: block;
+    margin-top: 5px;
+}
+</style>
 {% endblock %}

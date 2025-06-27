@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="auth-container">
+    <h2>Login with OTP</h2>
+    <form method="POST" action="{% url 'otp_login' %}">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        <button type="submit" class="btn">Send OTP</button>
+    </form>
+    <p>Prefer password login? <a href="{% url 'login_page' %}">Login with Password</a></p>
+    <p>Don't have an account? <a href="{% url 'register_page' %}">Register</a></p>
+</div>
+{% endblock %}

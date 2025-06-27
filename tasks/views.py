@@ -8,9 +8,16 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
 from .models import User, Task
 from .serializers import TaskSerializer, UserSerializer
 import datetime
+import re
+
+# Custom pagination class for tasks
+class TaskPagination(PageNumberPagination):
+    page_size = 3
+
 
 # Rendering the registration page
 def register_page(request):
@@ -21,10 +28,24 @@ def register_page(request):
 # Handling user registration and sending OTP
 def register(request):
     if request.method == 'POST':
-        username = request.POST['username']
-        email = request.POST['email']
+        username = request.POST['username'].strip()
+        email = request.POST['email'].strip()
         password = request.POST['password']
         confirm_password = request.POST['confirm_password']
+        
+        # Backend validation
+        if len(username) < 3:
+            messages.error(request, 'Username must be at least 3 characters long')
+            return redirect('register_page')
+        
+        email_regex = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
+        if not re.match(email_regex, email):
+            messages.error(request, 'Please enter a valid email address')
+            return redirect('register_page')
+        
+        if len(password) < 6:
+            messages.error(request, 'Password must be at least 6 characters long')
+            return redirect('register_page')
         
         if password != confirm_password:
             messages.error(request, 'Passwords do not match')
@@ -52,6 +73,39 @@ def register(request):
         )
         return redirect('otp_verify')
     return redirect('register_page')
+
+# Rendering the OTP login page
+def otp_login_page(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    return render(request, 'otp_login.html')
+
+# Handling OTP login email submission
+def otp_login(request):
+    if request.method == 'POST':
+        email = request.POST['email']
+        try:
+            user = User.objects.get(email=email)
+            if not user.is_verified:
+                messages.error(request, 'Account is not verified. Please verify your account.')
+                return redirect('otp_login_page')
+            otp = get_random_string(length=6, allowed_chars='1234567890')
+            request.session['otp'] = otp
+            request.session['user_id'] = user.id
+            request.session['otp_type'] = 'login'
+            
+            send_mail(
+                'Your OTP for Task Organizer Login',
+                f'Your OTP is {otp}',
+                settings.EMAIL_HOST_USER,
+                [email],
+                fail_silently=False,
+            )
+            return redirect('otp_verify')
+        except User.DoesNotExist:
+            messages.error(request, 'User with this email does not exist.')
+            return redirect('otp_login_page')
+    return redirect('otp_login_page')
 
 # Rendering the OTP verification page
 def otp_verify_page(request):
@@ -117,6 +171,7 @@ def task_form(request):
 class TaskViewSet(viewsets.ModelViewSet):
     serializer_class = TaskSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = TaskPagination
 
     def get_queryset(self):
         return Task.objects.filter(user=self.request.user)
