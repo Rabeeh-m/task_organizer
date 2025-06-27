@@ -16,7 +16,6 @@ db.sqlite3
 *.swo
 *.swn
 media/
-static/
 
 # Environments
 *.env

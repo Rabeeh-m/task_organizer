@@ -12,12 +12,10 @@ from rest_framework.pagination import PageNumberPagination
 from .models import User, Task
 from .serializers import TaskSerializer, UserSerializer
 import datetime
-import re
 
 # Custom pagination class for tasks
 class TaskPagination(PageNumberPagination):
     page_size = 3
-
 
 # Rendering the registration page
 def register_page(request):
@@ -28,24 +26,10 @@ def register_page(request):
 # Handling user registration and sending OTP
 def register(request):
     if request.method == 'POST':
-        username = request.POST['username'].strip()
-        email = request.POST['email'].strip()
+        username = request.POST['username']
+        email = request.POST['email']
         password = request.POST['password']
         confirm_password = request.POST['confirm_password']
-        
-        # Backend validation
-        if len(username) < 3:
-            messages.error(request, 'Username must be at least 3 characters long')
-            return redirect('register_page')
-        
-        email_regex = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
-        if not re.match(email_regex, email):
-            messages.error(request, 'Please enter a valid email address')
-            return redirect('register_page')
-        
-        if len(password) < 6:
-            messages.error(request, 'Password must be at least 6 characters long')
-            return redirect('register_page')
         
         if password != confirm_password:
             messages.error(request, 'Passwords do not match')
@@ -63,9 +47,10 @@ def register(request):
         otp = get_random_string(length=6, allowed_chars='1234567890')
         request.session['otp'] = otp
         request.session['user_id'] = user.id
+        request.session['otp_type'] = 'register'
         
         send_mail(
-            'Your OTP for Task Organizer',
+            'Your OTP for Task Organizer Registration',
             f'Your OTP is {otp}',
             settings.EMAIL_HOST_USER,
             [email],
@@ -111,19 +96,27 @@ def otp_login(request):
 def otp_verify_page(request):
     return render(request, 'otp_verify.html')
 
-# Verifying OTP and activating user
+# Verifying OTP and activating user or logging in
 def verify_otp(request):
     if request.method == 'POST':
         otp = request.POST['otp']
         if otp == request.session.get('otp'):
             user_id = request.session.get('user_id')
             user = User.objects.get(id=user_id)
-            user.is_verified = True
-            user.save()
-            login(request, user)
-            messages.success(request, 'Registration successful!')
+            otp_type = request.session.get('otp_type')
+            
+            if otp_type == 'register':
+                user.is_verified = True
+                user.save()
+                login(request, user)
+                messages.success(request, 'Registration successful!')
+            elif otp_type == 'login':
+                login(request, user)
+                messages.success(request, 'Login successful!')
+                
             del request.session['otp']
             del request.session['user_id']
+            del request.session['otp_type']
             return redirect('dashboard')
         else:
             messages.error(request, 'Invalid OTP')
@@ -142,8 +135,7 @@ def login_user(request):
         email = request.POST['email']
         password = request.POST['password']
         try:
-            user = User.objects.get(email=email)
-            user = authenticate(request, username=user.username, password=password)
+            user = authenticate(request, username=User.objects.get(email=email).username, password=password)
             if user is not None and user.is_verified:
                 login(request, user)
                 return redirect('dashboard')
@@ -151,7 +143,7 @@ def login_user(request):
                 messages.error(request, 'Invalid credentials or unverified account')
                 return redirect('login_page')
         except User.DoesNotExist:
-            messages.error(request, 'User with this email does not exist')
+            messages.error(request, 'Invalid credentials')
             return redirect('login_page')
     return redirect('login_page')
 
@@ -179,7 +171,7 @@ class TaskViewSet(viewsets.ModelViewSet):
     pagination_class = TaskPagination
 
     def get_queryset(self):
-        return Task.objects.filter(user=self.request.user)
+        return Task.objects.filter(user=self.request.user).order_by('created_at')
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
