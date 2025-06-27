@@ -141,12 +141,17 @@ def login_user(request):
     if request.method == 'POST':
         email = request.POST['email']
         password = request.POST['password']
-        user = authenticate(request, username=User.objects.get(email=email).username, password=password)
-        if user is not None and user.is_verified:
-            login(request, user)
-            return redirect('dashboard')
-        else:
-            messages.error(request, 'Invalid credentials or unverified account')
+        try:
+            user = User.objects.get(email=email)
+            user = authenticate(request, username=user.username, password=password)
+            if user is not None and user.is_verified:
+                login(request, user)
+                return redirect('dashboard')
+            else:
+                messages.error(request, 'Invalid credentials or unverified account')
+                return redirect('login_page')
+        except User.DoesNotExist:
+            messages.error(request, 'User with this email does not exist')
             return redirect('login_page')
     return redirect('login_page')
 
