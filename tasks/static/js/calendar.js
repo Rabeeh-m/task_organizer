@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             break;
                         }
                         const data = await response.json();
+                        console.log('Raw API response:', data); // Log raw response for debugging
                         if (Array.isArray(data.results)) {
                             allTasks = allTasks.concat(data.results);
                         } else {

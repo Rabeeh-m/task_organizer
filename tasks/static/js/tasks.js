@@ -1,4 +1,3 @@
-
 // Fetch and display tasks with pagination
 function fetchTasks(page = 1) {
     fetch(`/api/tasks/?page=${page}`)
@@ -9,13 +8,14 @@ function fetchTasks(page = 1) {
             return response.json();
         })
         .then(data => {
-            console.log('Fetched data:', data);  // Debug output
-
+            console.log('Raw API response:', data); // Log raw response for debugging
             const taskTableBody = document.getElementById('taskTableBody');
             taskTableBody.innerHTML = '';
 
             if (!data || !Array.isArray(data.results)) {
-                throw new Error('Invalid response format: expected `results` to be an array.');
+                console.error('Invalid response format:', data);
+                taskTableBody.innerHTML = '<tr><td colspan="5">No tasks available or invalid response</td></tr>';
+                return;
             }
 
             data.results.forEach(task => {
@@ -37,6 +37,8 @@ function fetchTasks(page = 1) {
         })
         .catch(error => {
             console.error('Error fetching tasks:', error);
+            const taskTableBody = document.getElementById('taskTableBody');
+            taskTableBody.innerHTML = '<tr><td colspan="5">Error loading tasks</td></tr>';
         });
 }
 
@@ -85,6 +87,7 @@ function getPageNumber(url) {
 // Handle task form submission
 document.getElementById('taskForm')?.addEventListener('submit', function (e) {
     e.preventDefault();
+    console.log('CSRF Token:', getCookie('csrftoken')); // Log CSRF token for debugging
     const taskId = document.getElementById('taskId').value;
     const method = taskId ? 'PUT' : 'POST';
     const url = taskId ? `/api/tasks/${taskId}/` : '/api/tasks/';
